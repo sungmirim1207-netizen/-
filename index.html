@@ -1,43 +1,1472 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KeepIn Cool (킵인쿨) - React & Firebase B2B 단기 신선·냉동 보관 플랫폼</title>
+  <title>KeepIn Cool (킵인쿨) | 24시 스마트 냉동 슬롯 공유 플랫폼</title>
   
-  <!-- React 18 & ReactDOM -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel Standalone for in-browser JSX compilation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Firebase Web SDK v10 (compat for standalone in-browser execution) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
+  <!-- 파비콘 -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Lucide Icons -->
+  
+  <!-- Pretendard 웹폰트 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  
+  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-  <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: -0.025em;
+      background-color: #F8FAFC;
+      color: #0F172A;
+    }
+    input:focus, select:focus, textarea:focus, button:focus-visible { outline: none; }
+    @keyframes mapPulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
+    .map-pin-pulse { animation: mapPulse 2.2s infinite; }
+  </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 antialiased flex flex-col">
-  <!-- React Root Mount Point -->
-  <div id="root"></div>
+<body class="selection:bg-blue-600 selection:text-white pb-16">
 
-  <!-- Dual-Mode Storage & Firebase Service -->
-  <script src="src/firebase.js"></script>
-  <script src="src/storageService.js"></script>
+  <!-- ================= 최상단 공지 및 계정 바 ================= -->
+  <aside aria-label="상단 안내" class="bg-slate-900 text-white text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold">안내</span>
+        <span>신규 가입 시 첫 24시간 보관 <strong>무료 쿠폰</strong> 및 <strong>1,000 M</strong> 정액 지급!</span>
+      </div>
+      <div class="flex items-center gap-3 text-[11px] text-slate-300">
+        <button onclick="openMyPageModal()" class="hover:text-blue-300 flex items-center gap-1 font-medium" id="topUserGreeting">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>로그인이 필요합니다</span>
+        </button>
+        <span>·</span>
+        <button onclick="handleAuthAction()" class="text-blue-400 hover:text-blue-300 underline font-bold" id="topAuthBtn">로그인 / 회원가입</button>
+      </div>
+    </div>
+  </aside>
 
-  <!-- Modular React Application Bundle -->
-  <script type="text/babel" src="src/bundle.jsx"></script>
+  <!-- ================= 네비게이션 헤더 ================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      
+      <!-- 로고 -->
+      <a href="#" class="flex items-center gap-2 shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-sm">
+          <i data-lucide="snowflake" class="w-5 h-5 stroke-[2.5]"></i>
+        </div>
+        <div class="leading-none">
+          <span class="text-lg font-black tracking-tight text-slate-900">KeepIn<span class="text-blue-600">Cool</span></span>
+          <span class="block text-[9px] font-bold text-slate-400">스마트 냉동 슬롯 공유 네트워크</span>
+        </div>
+      </a>
+
+      <!-- 역할 스위처 -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+        <button type="button" onclick="switchRole('guest')" id="roleBtnGuest" class="px-3 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition">
+          👤 게스트(이용자)
+        </button>
+        <button type="button" onclick="switchRole('host')" id="roleBtnHost" class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition">
+          🏪 호스트(점주)
+        </button>
+        <button type="button" onclick="switchRole('admin')" id="roleBtnAdmin" class="hidden px-3 py-1.5 rounded-lg text-rose-600 hover:text-rose-800 transition">
+          🛡️ 최고관리자
+        </button>
+      </div>
+
+      <!-- 우측 액션 -->
+      <div class="flex items-center gap-2">
+        <button onclick="openMyPageModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span>마이페이지</span>
+        </button>
+
+        <button onclick="openMileageModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-100 transition">
+          <i data-lucide="coins" class="w-3.5 h-3.5"></i>
+          <span id="headerMileageDisplay">0 M</span>
+        </button>
+
+        <button onclick="handleRoleCta()" id="headerCtaBtn" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition shrink-0">
+          보관 슬롯 예약하기
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= 메인 컨텐츠 영역 ================= -->
+  <main class="max-w-6xl mx-auto px-4 space-y-12 mt-6">
+
+    <!-- ================= [게스트 뷰] ================= -->
+    <div id="viewGuest" class="space-y-12">
+      
+      <!-- 히어로 배너 -->
+      <section class="py-10 px-6 rounded-3xl bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl space-y-4">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
+            <span>🧊 규격 포장 완제품 · 보냉백 · 신선식품 안심 보관</span>
+          </div>
+          <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+            원룸 냉장고 용량이 부족할 땐?<br />
+            <span class="text-blue-400">집 앞 24시 무인 매장에 쏙!</span>
+          </h1>
+          <p class="text-sm text-slate-300 leading-relaxed font-normal">
+            동네 무인 매장의 남는 냉동 슬롯을 대여하고 CNN/OCR 포장 위생 검증 및 영하 18℃ IoT 콜드체인 모니터링으로 신선하게 보관하세요.
+          </p>
+
+          <!-- 검색창 -->
+          <div class="pt-2 flex flex-col sm:flex-row gap-2">
+            <div class="flex-1 bg-white rounded-2xl p-1.5 flex items-center border border-slate-300 text-slate-800 shadow-md">
+              <i data-lucide="map-pin" class="w-5 h-5 text-blue-600 ml-2 shrink-0"></i>
+              <input type="text" id="guestQuickSearch" onkeyup="if(event.key==='Enter') searchStoresFromInput()" placeholder="역명 또는 거점 지역 검색 (예: 신촌, 봉천, 안암, 역삼)" class="w-full bg-transparent px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 font-medium">
+            </div>
+            <button onclick="searchStoresFromInput()" class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shrink-0">
+              거점 매장 검색
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 이용 가이드 3스텝 -->
+      <section class="py-8 bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
+        <h2 class="text-lg font-extrabold text-center text-slate-900 mb-6">스마트 냉동 슬롯 이용 가이드</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center mx-auto mb-2 text-xs">1</div>
+            <h3 class="font-bold text-xs text-slate-900">슬롯 예약 & CNN 위생 검증</h3>
+            <p class="text-[11px] text-slate-500 mt-1">거점 매장 선택 후 포장 밀봉 및 유통기한 OCR 확인</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center mx-auto mb-2 text-xs">2</div>
+            <h3 class="font-bold text-xs text-slate-900">매장 방문 & 스티커 밀봉</h3>
+            <p class="text-[11px] text-slate-500 mt-1">온도 감지 변색(TTI) 스티커 부착 후 바코드 입고</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center mx-auto mb-2 text-xs">3</div>
+            <h3 class="font-bold text-xs text-slate-900">픽업 & 투명 후불 정산</h3>
+            <p class="text-[11px] text-slate-500 mt-1">출고 스티커 확인 후 점주 70% 정산 및 안심 수령</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 스마트 지도 & 매장 리스트 -->
+      <section id="mapSection" class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">주변 거점 매장 및 스마트 맵</h2>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">24시간 센서 연동</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">지도의 매장 핀을 누르면 슬롯 잔여 저장량과 냉동 온도를 실시간으로 확인 가능합니다.</p>
+          </div>
+          
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0" id="regionFilterButtons">
+            <button onclick="focusMapRegion('all')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs region-btn" data-region="all">전체 거점</button>
+            <button onclick="focusMapRegion('신촌')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs region-btn" data-region="신촌">신촌</button>
+            <button onclick="focusMapRegion('봉천')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs region-btn" data-region="봉천">봉천</button>
+            <button onclick="focusMapRegion('안암')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs region-btn" data-region="안암">안암</button>
+            <button onclick="focusMapRegion('역삼')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs region-btn" data-region="역삼">역삼</button>
+          </div>
+        </div>
+
+        <!-- 벡터 맵 캔버스 -->
+        <div class="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 select-none">
+          <svg class="absolute inset-0 w-full h-full object-cover opacity-60" viewBox="0 0 900 500" preserveAspectRatio="none">
+            <defs>
+              <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.8"/>
+              </pattern>
+            </defs>
+            <rect width="900" height="500" fill="#0f172a" />
+            <rect width="900" height="500" fill="url(#gridPattern)" />
+            <path d="M -20 280 Q 200 240, 400 310 T 920 270" fill="none" stroke="#1e3a8a" stroke-width="36" stroke-linecap="round" opacity="0.7"/>
+            <path d="M 230 180 Q 320 150, 680 180 Q 750 320, 680 400 Q 350 440, 230 380 Z" fill="none" stroke="#059669" stroke-width="6" stroke-dasharray="6,4" opacity="0.5"/>
+          </svg>
+
+          <div id="mockMapPinsContainer" class="absolute inset-0"></div>
+          
+          <!-- 선택된 매장 플로팅 카드 -->
+          <div id="mapSelectedStoreCard" class="hidden absolute top-4 left-4 z-20 max-w-xs w-full bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-2xl transition-all">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[10px] font-bold text-blue-600" id="cardStoreRegion">신촌 거점</span>
+                <h4 class="font-black text-sm text-slate-900" id="cardStoreName">매장명</h4>
+              </div>
+              <button onclick="closeMapCard()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p class="text-xs text-slate-500 mt-1" id="cardStoreAddress">주소</p>
+            <div class="mt-2.5 pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+              <span class="font-bold text-slate-600" id="cardStoreSlots">잔여: 4/8칸</span>
+              <span class="font-mono font-bold text-blue-600" id="cardStoreTemp">-18.6°C</span>
+            </div>
+            <button onclick="openBookingFromCard()" class="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition">
+              이 매장 예약하기
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2" id="guestStoreGrid"></div>
+      </section>
+
+      <!-- 5대 안전장치 및 스티커 체험 -->
+      <section class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="text-center max-w-xl mx-auto space-y-1">
+          <h2 class="text-2xl font-black tracking-tight">식품 및 물품 안심 보관 5대 안전장치</h2>
+          <p class="text-xs text-slate-400">온도 센서 모니터링과 표준 임대차 약관을 기반으로 안전한 보관 환경을 제공합니다.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-slate-900">
+          <div class="p-5 rounded-2xl bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">📦</div>
+              <h3 class="font-bold text-sm text-slate-900 mb-1">1. 입고 품목 서술 및 규격 제한</h3>
+              <p class="text-xs text-slate-500">완제 포장 식품, 보냉팩, 밀키트 등 미개봉 공산품 위주 입고 허용 (자가제조/의약품 금지).</p>
+            </div>
+            <span class="text-[10px] font-bold text-blue-600 mt-2 block">CNN 무결성 검증 연동</span>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-blue-50 border-2 border-blue-400 flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">🏷️</div>
+              <h3 class="font-bold text-sm text-blue-950 mb-1">2. 온도 감지 변색 스티커</h3>
+              <p class="text-xs text-blue-900 mb-2">정상(-18°C 이하) 파란색 유지, 보관 중 해동 시 비가역적 빨간색으로 변색되어 과실 유무 판단.</p>
+              <div class="bg-white p-2.5 rounded-xl border border-blue-200 text-xs space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-slate-500">스티커 시뮬레이터:</span>
+                  <span id="stickerDemoStatus" class="font-black text-blue-600 text-[11px]">❄️ 파란색 (정상 보관)</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button onclick="simulateSticker(false)" class="py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-700 hover:bg-slate-200">정상 상태</button>
+                  <button onclick="simulateSticker(true)" class="py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-bold hover:bg-rose-100">해동 상태</button>
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-blue-700 mt-2 block">과학적 상태 확인</span>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">⚖️</div>
+              <h3 class="font-bold text-sm text-slate-900 mb-1">3. 공간 임대차 약관</h3>
+              <p class="text-xs text-slate-500">지하철 물품보관함과 유사한 '규격 공간 일시 임대차 계약'으로 명확한 권리 정의.</p>
+            </div>
+            <button onclick="openTermsModal()" class="text-[10px] font-bold text-blue-600 mt-2 text-left underline">표준약관 보기</button>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">🛡️</div>
+              <h3 class="font-bold text-sm text-slate-900 mb-1">4. 단기 안심 특약 보험</h3>
+              <p class="text-xs text-slate-500">보관 이용료(건당 300원) 내 단기 특약이 기본 포함되어 정전/고장 시 최대 10만원 한도 보상.</p>
+            </div>
+            <button onclick="openInsuranceModal()" class="text-[10px] font-bold text-emerald-600 mt-2 text-left underline">보험 가이드 보기</button>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">🏪</div>
+              <h3 class="font-bold text-sm text-slate-900 mb-1">5. 24시 보안 거점 매장</h3>
+              <p class="text-xs text-slate-500">CCTV 및 무인 출입 제어 시스템이 갖춰진 정식 가맹 인프라 활용.</p>
+            </div>
+            <span class="text-[10px] font-bold text-slate-400 mt-2 block">안전한 물리 거점</span>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-blue-600 text-white flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] font-bold text-blue-200">투명한 70% 상생 요금</span>
+              <h3 class="font-black text-lg text-white mt-1">10L 기준 1일 3,000원</h3>
+              <p class="text-xs text-blue-100 mt-1">호스트 점주 70%(2,100원) 직결 정산으로 전기세 상쇄를 지원합니다.</p>
+            </div>
+            <button onclick="openBookingModal()" class="mt-3 w-full py-2 bg-white text-blue-600 font-bold rounded-xl text-xs hover:bg-blue-50 transition">
+              지금 슬롯 예약하기
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 내 보관함 및 실시간 모니터링 -->
+      <section id="guestMyStorage" class="bg-white rounded-3xl border border-slate-200 p-6 space-y-6 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">내 보관함 & 실시간 슬롯 모니터링</h2>
+            <p class="text-xs text-slate-500">보관 중인 슬롯의 센서 온도를 주기적으로 확인하고 출고 시 후불로 정산합니다.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="guestMonitorSelect" onchange="changeMonitorItem(this.value)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 bg-white"></select>
+            <button onclick="openBookingModal()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition">
+              + 새 예약
+            </button>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div class="p-3 rounded-xl bg-slate-900 text-white">
+              <span class="text-[10px] text-slate-400 font-bold block">현재 센서 온도</span>
+              <span class="text-2xl font-black font-mono tracking-tight" id="monCurrentTemp">-18.6°C</span>
+            </div>
+            <div class="p-3 rounded-xl bg-white border border-slate-200">
+              <span class="text-[10px] text-slate-500 font-bold block">최저 온도</span>
+              <span class="text-lg font-black font-mono text-blue-700" id="monMinTemp">-19.2°C</span>
+            </div>
+            <div class="p-3 rounded-xl bg-white border border-slate-200">
+              <span class="text-[10px] text-slate-500 font-bold block">최고 온도</span>
+              <span class="text-lg font-black font-mono text-slate-800" id="monMaxTemp">-18.1°C</span>
+            </div>
+            <div class="p-3 rounded-xl bg-white border border-slate-200">
+              <span class="text-[10px] text-slate-500 font-bold block">슬롯 상태</span>
+              <span class="text-sm font-black mt-1 block text-emerald-600" id="monStatusText">안전 정상</span>
+            </div>
+          </div>
+
+          <div class="relative h-64 w-full bg-white rounded-xl p-3 border border-slate-200">
+            <canvas id="liveTempChart"></canvas>
+            <div id="chartEmptyOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl">
+              <p class="text-xs font-bold text-slate-600">현재 보관 중인 물품이 없습니다</p>
+              <button onclick="openBookingModal()" class="mt-2 px-3 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-lg">보관 예약하기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h3 class="font-black text-sm text-slate-900">내 보관 목록 & 출고/결제</h3>
+          <div id="guestBookingsList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ================= [호스트 뷰] ================= -->
+    <div id="viewHost" class="hidden space-y-8">
+      <section class="p-6 rounded-3xl bg-gradient-to-r from-emerald-900 to-teal-900 text-white shadow-lg space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-bold border border-emerald-400/30">🏪 24시 무인 매장 파트너 포털</span>
+            <h1 class="text-2xl sm:text-3xl font-black mt-2">유휴 냉동 슬롯 활용 부가수익 창출</h1>
+            <p class="text-xs text-emerald-200 mt-1">70% 정산율로 냉동고 전기세(월 18만원)를 100% 상쇄하고 순이익을 달성하세요.</p>
+          </div>
+          <button onclick="openHostApplyModal()" class="px-5 py-3 rounded-2xl bg-white text-emerald-900 font-extrabold text-xs shadow-md hover:bg-emerald-50 shrink-0">
+            + 새 매장 호스트 입점 신청
+          </button>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900">매장 냉동 슬롯 통합 관리</h2>
+            <p class="text-xs text-slate-500">입고 사진 검수, 출고용 스티커/바코드 발급 및 상태 관리를 진행합니다.</p>
+          </div>
+          <select id="hostStoreSelector" onchange="changeHostStore(this.value)" class="px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold text-slate-800 bg-white"></select>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div class="p-4 rounded-2xl bg-emerald-900 text-white">
+            <span class="text-[10px] text-emerald-200 font-bold block">냉동고 내부 온도</span>
+            <span class="text-2xl font-black font-mono tracking-tight" id="hostStatTemp">-18.6°C</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <span class="text-[10px] text-emerald-800 font-bold block">잔여 슬롯 수</span>
+            <span class="text-2xl font-black font-mono text-slate-900" id="hostStatSlots">4 / 8칸</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <span class="text-[10px] text-emerald-800 font-bold block">사용 가능 저장량</span>
+            <span class="text-xl font-black font-mono text-slate-900" id="hostStatCapacity">170L / 320L</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <span class="text-[10px] text-emerald-800 font-bold block">이번 달 정산 예정액 (70%)</span>
+            <span class="text-xl font-black font-mono text-emerald-700" id="hostStatProfit">245,700원</span>
+          </div>
+        </div>
+
+        <div id="hostPanelVerify" class="space-y-3 pt-4">
+          <h3 class="text-sm font-bold text-slate-900">📷 입고 물품 사진 검수 & 스티커/바코드 관리</h3>
+          <div id="hostVerifyCardList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+      </section>
+
+      <!-- 수익 시뮬레이터 & 전기세 상쇄 비교 -->
+      <section class="bg-white rounded-3xl border border-slate-200 p-6 max-w-3xl mx-auto space-y-5">
+        <div>
+          <h3 class="font-extrabold text-base text-slate-900">매장 예상 부가수익 시뮬레이터 (70% 정산율)</h3>
+          <p class="text-xs text-slate-500">슬롯을 대여해 월 냉동고 전기세를 전액 상쇄하고 추가 순이익을 계산해 보세요.</p>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-600">공유할 유휴 냉동 슬롯 수</span>
+            <span class="text-emerald-700 font-bold font-mono" id="calcSlotLabel">6개 슬롯 (약 1칸)</span>
+          </div>
+          <input type="range" id="calcSlotRange" min="2" max="16" value="6" step="1" oninput="updateHostCalculator()" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="p-4 rounded-2xl bg-emerald-950 text-white text-center">
+            <span class="text-xs text-emerald-300">점주 월 예상 정산액 (가동률 65% 기준)</span>
+            <div class="text-3xl font-black text-emerald-400 font-mono my-1" id="calcProfitResult">245,700원</div>
+            <span class="text-[10px] text-emerald-200">건당 2,100원 × 약 117건</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 text-white text-center flex flex-col justify-center">
+            <span class="text-xs text-slate-400">냉동고 전기세(180,000원) 상쇄 결과</span>
+            <div class="text-2xl font-black text-emerald-400 font-mono my-1" id="calcNetProfitResult">+65,700원 흑자</div>
+            <span class="text-[10px] text-blue-300 font-bold">⚡ 전기세 100% 전액 상쇄 달성</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= [관리자 뷰] ================= -->
+    <div id="viewAdmin" class="hidden space-y-8">
+      <section class="p-6 rounded-3xl bg-slate-900 text-white shadow-lg space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-400/30">🛡️ Admin Control Tower</span>
+            <h1 class="text-2xl sm:text-3xl font-black mt-2">플랫폼 운영 및 중개 수수료 정산 통제소</h1>
+          </div>
+          <button onclick="logoutAdmin()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shrink-0">
+            최고관리자 모드 해제
+          </button>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+        <h3 class="font-black text-sm text-slate-900">가맹 매장 슬롯 상태 및 원격 제어</h3>
+        <div id="adminStoresTable" class="overflow-x-auto text-xs"></div>
+      </section>
+    </div>
+
+    <!-- ================= 공통: 고객센터 & 서비스 확장 안내 ================= -->
+    <section id="supportSection" class="bg-white rounded-3xl border border-slate-200 p-6 space-y-6">
+      <div>
+        <h2 class="text-xl font-extrabold text-slate-900">고객센터 & 1:1 문의 / 민원 접수</h2>
+        <p class="text-xs text-slate-500">매장 문의 및 플랫폼 민원 접수를 처리합니다.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form id="inquiryForm" onsubmit="handleInquirySubmit(event)" class="md:col-span-3 space-y-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">제목</label>
+            <input type="text" id="inqTitle" required placeholder="문의 제목을 입력하세요." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">내용</label>
+            <textarea id="inqContent" required rows="3" placeholder="자세한 문의 내용을 작성해 주세요." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs resize-none"></textarea>
+          </div>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs">접수하기</button>
+        </form>
+
+        <div class="md:col-span-2 space-y-3">
+          <div class="p-4 rounded-2xl bg-slate-900 text-white text-xs space-y-1">
+            <span class="font-bold block">유선 고객센터 1588-4282</span>
+            <span class="text-slate-400 text-[11px] block">평일 09:00 ~ 18:00 (사고 접수 24시간 연동)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 서비스 확장 제휴 안내 -->
+      <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 text-xs space-y-2">
+        <h3 class="font-extrabold text-blue-950 flex items-center gap-1.5">
+          <i data-lucide="layers" class="w-4 h-4 text-blue-600"></i>
+          <span>KeepIn Cool 생태계 확장 모듈</span>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700 text-[11px]">
+          <div class="p-3 bg-white rounded-xl border border-blue-100">
+            <strong class="text-slate-900 block mb-1">🤝 중고거래 플랫폼 냉동 거점 연동</strong>
+            <span>식품/저온 거래 시 킵인쿨 슬롯을 안전 거래 픽업 장소로 지정 가능.</span>
+          </div>
+          <div class="p-3 bg-white rounded-xl border border-blue-100">
+            <strong class="text-slate-900 block mb-1">🎁 냉동 식품 기프티콘 / 모바일 선물하기</strong>
+            <span>거점 매장 슬롯에 보관된 완제 밀키트를 선물 코드로 전송하여 직접 수령.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= 푸터 ================= -->
+  <footer class="mt-16 bg-slate-900 text-slate-400 text-xs py-8 px-4 text-center border-t border-slate-800">
+    <div class="max-w-5xl mx-auto space-y-3">
+      <div class="font-bold text-white text-sm">KeepIn Cool (킵인쿨)</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">
+        B2P 단기 신선·냉동 보관 플랫폼 | 사업자등록번호: 104-81-29482<br />
+        주소: 서울특별시 서대문구 신촌로 120 | 대표전화: 1588-4282
+      </p>
+      <div class="flex justify-center gap-4 text-xs font-semibold text-slate-300">
+        <button type="button" onclick="openTermsModal()" class="hover:text-blue-400 underline">공간 임대차 표준약관</button>
+        <span>·</span>
+        <button type="button" onclick="openInsuranceModal()" class="hover:text-emerald-400 underline">단기 안심 특약 안내</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= 모달 1: 로그인 & 관리자 ================= -->
+  <div id="modalAuth" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="text-sm font-bold">로그인 및 본인인증</h3>
+        <button onclick="closeModal('modalAuth')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <form onsubmit="handleManualLogin(event)" class="space-y-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">아이디 / 휴대전화</label>
+            <input type="text" id="manualAuthId" required placeholder="아이디 입력 (예: kim2026)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">비밀번호</label>
+            <input type="password" id="manualAuthPw" required placeholder="••••••••" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+
+          <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+            <input type="checkbox" id="authIsAdminCheck" class="rounded text-rose-600 w-4 h-4 cursor-pointer">
+            <label for="authIsAdminCheck" class="font-bold text-slate-700 cursor-pointer text-[11px]">
+              <span>🛡️ 최고관리자로 로그인 (TESTMASTER)</span>
+            </label>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition">
+            로그인하기
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 모달 2: 예약 & CNN/OCR 위생 검증 ================= -->
+  <div id="modalBooking" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+      <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between shrink-0">
+        <h3 class="text-sm font-bold flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>냉동 슬롯 예약 & CNN 위생 검증</span>
+        </h3>
+        <button onclick="closeModal('modalBooking')" class="text-blue-100 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="p-4 space-y-3.5 text-xs overflow-y-auto">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">보관 거점 매장 선택</label>
+          <select id="bookStoreSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"></select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">상세 물품명 (미개봉 공산품 한정)</label>
+          <input type="text" id="bookItemName" required placeholder="예: 비비고 교자만두 1.4kg" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+        </div>
+
+        <!-- CNN / OCR 사진 업로드 및 실시간 AI 검증 섹션 -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-800 flex items-center gap-1">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span>CNN 포장 무결성 & 유통기한 OCR 검증</span>
+            </span>
+            <button type="button" onclick="document.getElementById('bookingPhotoFileInput').click()" class="text-[11px] text-blue-600 font-bold underline">
+              + 사진 파일 선택
+            </button>
+          </div>
+
+          <!-- 데모 원클릭 프리셋 버튼 -->
+          <div class="space-y-1">
+            <span class="text-[10px] text-slate-500 font-bold">빠른 시연 프리셋 (원클릭 테스트):</span>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" onclick="applyPresetAiSample('dumpling')" class="py-1 px-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100">
+                ✅ 정상 밀봉 만두
+              </button>
+              <button type="button" onclick="applyPresetAiSample('damaged')" class="py-1 px-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold hover:bg-amber-100">
+                ⚠️ 포장 파손 피자
+              </button>
+              <button type="button" onclick="applyPresetAiSample('expired')" class="py-1 px-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">
+                ❌ 유통기한 경과
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2 pt-1" id="bookingPhotoPreviewGrid"></div>
+          <input type="file" id="bookingPhotoFileInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 'booking')">
+
+          <!-- AI 진단 상태 카드 -->
+          <div id="aiInspectionBox" class="p-2.5 rounded-xl bg-white border border-slate-200 text-[11px] space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-bold">CNN 포장 밀봉 판독:</span>
+              <span id="aiCnnResult" class="font-bold text-emerald-600">완전 밀봉 정상 (96.4%)</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-bold">OCR 유통기한 인식:</span>
+              <span id="aiOcrResult" class="font-mono font-bold text-blue-600">EXP 2027.03.15 (안전)</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">부피 규격 선택</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="setVolume(5, 'S')" id="volBtnS" class="vol-btn p-2 rounded-xl border text-center font-bold border-slate-200 text-slate-700">5L (소형)</button>
+            <button type="button" onclick="setVolume(10, 'M')" id="volBtnM" class="vol-btn p-2 rounded-xl border text-center font-bold border-blue-500 bg-blue-50 text-blue-700">10L (표준)</button>
+            <button type="button" onclick="setVolume(20, 'L')" id="volBtnL" class="vol-btn p-2 rounded-xl border text-center font-bold border-slate-200 text-slate-700">20L (대형)</button>
+          </div>
+        </div>
+
+        <!-- 5대 안전장치 약관 필수 동의 -->
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1.5">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" id="agreeRulesCheck" checked required class="mt-0.5 rounded text-blue-600 w-3.5 h-3.5">
+            <span class="text-slate-600 leading-tight">
+              [필수] 미개봉 공산품 보관 준수 및 변색 스티커 판독, 공간 임대차 약관에 동의합니다.
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" id="submitBookingBtn" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition">
+          예약 확정 및 출입 바코드 발급
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 모달 3: 약관 & 안내 ================= -->
+  <div id="modalTerms" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
+        <h3 class="text-sm font-bold">공간 임대차 표준약관</h3>
+        <button onclick="closeModal('modalTerms')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed">
+        <p><strong>제1조 (목적)</strong> 본 약관은 게스트가 호스트의 규격 냉동 공간을 일시 임차함에 있어 필요한 권리 및 의무 관계를 규정함에 목적이 있습니다.</p>
+        <p><strong>제2조 (보관 품목 제한)</strong> 미개봉 가공식품 및 밀봉 공산품에 한하여 보관이 허용되며, 자가조리식품, 부패물, 위험물은 엄격히 금지됩니다.</p>
+        <p><strong>제3조 (책임 소재)</strong> 입/출고 시 부착하는 영구 변색(TTI) 스티커의 색상 변경 여부로 과실 유무를 판정합니다.</p>
+        <p><strong>제4조 (장기 미수거 조치)</strong> 보관 만료 48시간 초과 무단 방치 시 약관에 의거 점주 폐기 처분 권한이 발생합니다.</p>
+      </div>
+      <div class="p-3 bg-slate-50 border-t border-slate-200 text-right">
+        <button onclick="closeModal('modalTerms')" class="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalInsurance" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="bg-emerald-800 text-white px-5 py-3 flex items-center justify-between">
+        <h3 class="text-sm font-bold">단기 안심 특약 보험 안내</h3>
+        <button onclick="closeModal('modalInsurance')" class="text-emerald-200 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed">
+        <p>KeepIn Cool 이용 시 건당 300원 단기 특약이 자동 적용되어 정전 및 매장 컴프레서 이상 발생 시 최대 10만 원 한도의 신속 보상 절차가 진행됩니다.</p>
+      </div>
+      <div class="p-3 bg-slate-50 border-t border-slate-200 text-right">
+        <button onclick="closeModal('modalInsurance')" class="px-4 py-2 bg-emerald-800 text-white font-bold text-xs rounded-xl">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 모달 4: 새 매장 호스트 입점 신청 ================= -->
+  <div id="modalHostApply" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-emerald-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="text-sm font-bold">🏪 24시 무인 매장 호스트 입점 신청</h3>
+        <button onclick="closeModal('modalHostApply')" class="text-emerald-200 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="handleHostApplySubmit(event)" class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">매장명</label>
+          <input type="text" id="hostApplyName" required placeholder="예: 아이스데이 24시 망원점" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">매장 주소</label>
+          <input type="text" id="hostApplyAddress" required placeholder="예: 서울 마포구 망원로 45" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">공유 가능 슬롯 수</label>
+            <input type="number" id="hostApplySlots" min="2" max="24" value="8" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">월 평균 전기세</label>
+            <input type="text" id="hostApplyElectric" value="180,000원" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+          </div>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded-xl text-emerald-900 text-[11px] leading-relaxed">
+          💡 별도 전용 쇼케이스 구매 없이 기존 냉동고의 남는 칸을 등록하면 매달 70% 수익 정산으로 전기세를 100% 상쇄할 수 있습니다.
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition">
+          신청 완료 및 파트너 심사 접수
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 모달 5: 마이페이지 & 마일리지 ================= -->
+  <div id="modalMyPage" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="text-sm font-bold">마이페이지 & 계정 정보</h3>
+        <button onclick="closeModal('modalMyPage')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm">
+            👤
+          </div>
+          <div>
+            <h4 class="font-black text-sm text-slate-900" id="myPageUserName">게스트</h4>
+            <span class="text-[11px] text-slate-500" id="myPageUserRole">일반 회원 (안심 보관)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="p-3 rounded-xl bg-blue-50 border border-blue-200">
+            <span class="text-[10px] text-blue-700 font-bold block">보유 마일리지</span>
+            <span class="text-lg font-black text-blue-900" id="myPageMileage">1,000 M</span>
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+            <span class="text-[10px] text-emerald-700 font-bold block">보유 쿠폰</span>
+            <span class="text-lg font-black text-emerald-900">1장</span>
+          </div>
+        </div>
+
+        <div class="space-y-1.5 pt-1">
+          <span class="font-bold text-slate-700 block">사용 가능한 혜택</span>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] flex justify-between items-center">
+            <span>🎁 신규 회원 첫 24시간 보관 무료 쿠폰</span>
+            <span class="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px]">보유중</span>
+          </div>
+        </div>
+
+        <button onclick="closeModal('modalMyPage')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ================= 자바스크립트 비즈니스 로직 ================= -->
+  <script>
+    const PRICE_PER_HOUR_10L = 125;
+    const MASTER_ADMIN = { id: 'TESTMASTER', pw: 'TESTM2022' };
+
+    const STORES = [
+      { id: 'store-sc', name: '신촌 24시 아이스크림점', region: '신촌', mapX: 25, mapY: 38, address: '서울 서대문구 신촌로 120 (신촌역 3번출구 도보 3분)', totalSlots: 8, availableSlots: 4, capacityL: 320, usedL: 150, currentTemp: -18.6 },
+      { id: 'store-bc', name: '봉천 스마트 밀키트24', region: '봉천', mapX: 38, mapY: 76, address: '서울 관악구 관악로 165 (봉천역 1번출구 도보 2분)', totalSlots: 6, availableSlots: 3, capacityL: 240, usedL: 110, currentTemp: -19.1 },
+      { id: 'store-am', name: '안암 대학가 픽업마트', region: '안암', mapX: 68, mapY: 26, address: '서울 성북구 고려대로 104 (안암역 2번출구 도보 4분)', totalSlots: 8, availableSlots: 5, capacityL: 320, usedL: 105, currentTemp: -18.4 },
+      { id: 'store-ys', name: '역삼 24시 냉동 편의점', region: '역삼', mapX: 74, mapY: 68, address: '서울 강남구 테헤란로 152 (역삼역 3번출구 도보 3분)', totalSlots: 10, availableSlots: 2, capacityL: 400, usedL: 325, currentTemp: -18.8 }
+    ];
+
+    function makeSamplePhotoSvg(emoji, bg) {
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='300' height='300' fill='${bg}'/><text x='150' y='190' font-size='130' text-anchor='middle'>${emoji}</text></svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    const appState = {
+      role: 'guest',
+      user: { name: '김민지', role: 'guest', mileage: 1000 },
+      selectedHostStoreId: 'store-sc',
+      selectedMapStoreId: 'store-sc',
+      simulatedMelt: false,
+      bookings: [
+        { id: 'BK-701', storeId: 'store-sc', slotId: 'SLOT 03', userName: '김민지', itemName: '비비고 왕교자 1.4kg', volumeL: 10, photos: [makeSamplePhotoSvg('🥟', '#DBEAFE')], startAt: Date.now() - 3600000, status: 'active', checkedIn: true, sticker: 'blue', cnnPass: true, ocrDate: '2027.03.15' },
+        { id: 'BK-702', storeId: 'store-bc', slotId: 'SLOT 01', userName: '박서준', itemName: '밀키트 부대찌개 2인분', volumeL: 10, photos: [makeSamplePhotoSvg('🥘', '#FEF3C7')], startAt: Date.now() - 7200000, status: 'active', checkedIn: true, sticker: 'blue', cnnPass: true, ocrDate: '2026.12.30' }
+      ],
+      bookingDraft: {
+        volumeL: 10,
+        photos: [makeSamplePhotoSvg('🥟', '#DBEAFE')],
+        cnnScore: 96.4,
+        isSealed: true,
+        ocrDate: '2027.03.15',
+        passed: true
+      }
+    };
+
+    let liveChart = null;
+    let chartInterval = null;
+
+    const $ = id => document.getElementById(id);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+      initLiveChart();
+      updateHostCalculator();
+      if (window.lucide) lucide.createIcons();
+    });
+
+    function renderAll() {
+      const isAdmin = appState.user && appState.user.role === 'admin';
+      $('roleBtnAdmin').classList.toggle('hidden', !isAdmin);
+
+      if (appState.user) {
+        $('headerMileageDisplay').innerText = `${appState.user.mileage || 0} M`;
+        $('topUserGreeting').querySelector('span').innerText = `${appState.user.name}님 환영합니다`;
+        $('topAuthBtn').innerText = '로그아웃';
+        $('myPageUserName').innerText = appState.user.name;
+        $('myPageUserRole').innerText = isAdmin ? '🛡️ 최고관리자' : (appState.role === 'host' ? '🏪 호스트(점주)' : '👤 일반 회원(게스트)');
+        $('myPageMileage').innerText = `${appState.user.mileage || 0} M`;
+      } else {
+        $('headerMileageDisplay').innerText = '0 M';
+        $('topUserGreeting').querySelector('span').innerText = '로그인이 필요합니다';
+        $('topAuthBtn').innerText = '로그인 / 회원가입';
+      }
+
+      renderStoreCards();
+      renderMockMapPins();
+      renderBookings();
+      renderHostPortal();
+      renderAdminTable();
+      renderMonitorSelector();
+      renderHostStoreSelector();
+      renderPhotoPreviews();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderStoreCards(filteredStores = STORES) {
+      const container = $('guestStoreGrid');
+      if (!container) return;
+      if (filteredStores.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-xs">일치하는 거점 매장이 없습니다.</div>`;
+        return;
+      }
+      container.innerHTML = filteredStores.map(s => `
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 hover:border-blue-400 hover:shadow-md transition">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">${s.region}</span>
+            <span class="font-mono font-bold text-slate-700">${s.currentTemp}°C</span>
+          </div>
+          <h4 class="font-black text-sm text-slate-900">${s.name}</h4>
+          <p class="text-xs text-slate-500">잔여: ${s.availableSlots}/${s.totalSlots}칸 (${s.capacityL - s.usedL}L 여유)</p>
+          <div class="pt-1 flex gap-1.5">
+            <button onclick="selectMapStore('${s.id}')" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition">위치 보기</button>
+            <button onclick="openBookingModal('${s.id}')" class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition">예약하기</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderMockMapPins() {
+      const container = $('mockMapPinsContainer');
+      if (!container) return;
+      container.innerHTML = STORES.map(s => `
+        <div onclick="selectMapStore('${s.id}')" style="left: ${s.mapX}%; top: ${s.mapY}%;" class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group">
+          <div class="px-2.5 py-1 rounded-full bg-slate-900 text-white text-xs font-bold shadow-lg flex items-center gap-1 group-hover:bg-blue-600 transition map-pin-pulse">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>${s.region} (${s.availableSlots}칸)</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectMapStore(id) {
+      appState.selectedMapStoreId = id;
+      const store = STORES.find(s => s.id === id);
+      if (!store) return;
+
+      const card = $('mapSelectedStoreCard');
+      $('cardStoreRegion').innerText = `${store.region} 거점 매장`;
+      $('cardStoreName').innerText = store.name;
+      $('cardStoreAddress').innerText = store.address;
+      $('cardStoreSlots').innerText = `잔여: ${store.availableSlots}/${store.totalSlots}칸`;
+      $('cardStoreTemp').innerText = `${store.currentTemp}°C`;
+
+      card.classList.remove('hidden');
+      showToast(`📍 ${store.name} 거점이 선택되었습니다.`, 'info');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeMapCard() {
+      $('mapSelectedStoreCard').classList.add('hidden');
+    }
+
+    function openBookingFromCard() {
+      openBookingModal(appState.selectedMapStoreId);
+    }
+
+    function renderBookings() {
+      const list = $('guestBookingsList');
+      if (!list) return;
+      if (appState.bookings.length === 0) {
+        list.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 text-xs">현재 등록된 보관 내역이 없습니다.</div>`;
+        return;
+      }
+      list.innerHTML = appState.bookings.map(b => {
+        const store = STORES.find(s => s.id === b.storeId) || { name: '무인 매장' };
+        return `
+          <div class="p-4 bg-white rounded-2xl border border-slate-200 space-y-2 text-xs shadow-xs">
+            <div class="flex justify-between font-bold items-center">
+              <div>
+                <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[11px]">${store.name}</span>
+                <span class="ml-1 text-slate-800">${b.slotId}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] ${b.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                ${b.status === 'active' ? '보관 중 (안심 냉동)' : '출고 완료'}
+              </span>
+            </div>
+            <div class="flex gap-3 items-center">
+              <img src="${b.photos[0]}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0">
+              <div class="space-y-0.5 flex-1">
+                <h4 class="font-bold text-slate-900">${b.itemName}</h4>
+                <p class="text-slate-500 text-[11px]">변색 스티커 상태: <strong class="${b.sticker === 'blue' ? 'text-blue-600' : 'text-rose-600'}">${b.sticker === 'blue' ? '❄️ 정상 (파란색 유지)' : '⚠️ 해동 감지 (빨간색)'}</strong></p>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400">
+                  <span>부피: ${b.volumeL}L</span>
+                  <span>·</span>
+                  <span>OCR: ${b.ocrDate || '2027.03.15'}</span>
+                </div>
+              </div>
+              <button onclick="checkoutBooking('${b.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shrink-0">
+                출고/정산
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function checkoutBooking(bid) {
+      const idx = appState.bookings.findIndex(b => b.id === bid);
+      if (idx !== -1) {
+        appState.bookings.splice(idx, 1);
+        renderAll();
+        showToast('출고 및 70% 점주 정산이 정상 완료되었습니다. 안심 수령 감사합니다!', 'success');
+      }
+    }
+
+    function renderMonitorSelector() {
+      const sel = $('guestMonitorSelect');
+      if (!sel) return;
+      if (appState.bookings.length === 0) {
+        sel.innerHTML = `<option value="">보관 물품 없음</option>`;
+        $('chartEmptyOverlay').classList.remove('hidden');
+        return;
+      }
+      $('chartEmptyOverlay').classList.add('hidden');
+      sel.innerHTML = appState.bookings.map(b => `<option value="${b.id}">${b.slotId} - ${b.itemName}</option>`).join('');
+    }
+
+    function changeMonitorItem(val) {
+      showToast(`모니터링 슬롯 대상이 ${val}로 변경되었습니다.`, 'info');
+      updateLiveTelemetry();
+    }
+
+    function renderHostStoreSelector() {
+      const sel = $('hostStoreSelector');
+      if (!sel) return;
+      sel.innerHTML = STORES.map(s => `<option value="${s.id}" ${s.id === appState.selectedHostStoreId ? 'selected' : ''}>${s.name} (${s.region})</option>`).join('');
+    }
+
+    function changeHostStore(val) {
+      appState.selectedHostStoreId = val;
+      const store = STORES.find(s => s.id === val);
+      if (store) {
+        $('hostStatTemp').innerText = `${store.currentTemp}°C`;
+        $('hostStatSlots').innerText = `${store.availableSlots} / ${store.totalSlots}칸`;
+        $('hostStatCapacity').innerText = `${store.capacityL - store.usedL}L / ${store.capacityL}L`;
+      }
+      renderHostPortal();
+      showToast(`${store.name} 관리 데이터가 로드되었습니다.`, 'info');
+    }
+
+    function renderHostPortal() {
+      const list = $('hostVerifyCardList');
+      if (!list) return;
+      const storeBookings = appState.bookings.filter(b => b.storeId === appState.selectedHostStoreId);
+      if (storeBookings.length === 0) {
+        list.innerHTML = `<div class="col-span-full py-4 text-center text-slate-400 text-xs">현재 해당 매장에 등록된 입고 건이 없습니다.</div>`;
+        return;
+      }
+      list.innerHTML = storeBookings.map(b => `
+        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-slate-900">${b.slotId} · ${b.itemName}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.cnnPass ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${b.cnnPass ? 'CNN 통과 (96%)' : '위생 반려'}
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <img src="${b.photos[0]}" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0">
+            <div class="space-y-0.5 text-[11px] text-slate-600">
+              <p>소비기한 OCR: <strong class="text-blue-600 font-mono">${b.ocrDate || '2027.03.15'}</strong></p>
+              <p>스티커 상태: <strong class="text-blue-600">${b.sticker === 'blue' ? '❄️ 파란색 정상' : '⚠️ 빨간색 해동'}</strong></p>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-1 border-t border-slate-200/60">
+            <button onclick="showToast('${b.slotId} 도어락을 원격 제어합니다.', 'info')" class="flex-1 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-[10px] font-bold">
+              원격 도어락 열림
+            </button>
+            <button onclick="showToast('${b.slotId} 바코드가 재전송되었습니다.', 'success')" class="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold">
+              바코드 재전송
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminTable() {
+      const table = $('adminStoresTable');
+      if (!table) return;
+      table.innerHTML = `
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-400 font-bold">
+              <th class="py-2.5">매장명</th>
+              <th>지역</th>
+              <th>가동률 (점유/전체)</th>
+              <th>센서 온도</th>
+              <th>점주 정산율</th>
+              <th>원격 제어</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${STORES.map(s => `
+              <tr class="border-b border-slate-100 text-slate-700">
+                <td class="py-2.5 font-bold text-slate-900">${s.name}</td>
+                <td>${s.region}</td>
+                <td><span class="font-mono">${s.totalSlots - s.availableSlots}/${s.totalSlots}</span> (${Math.round((s.totalSlots - s.availableSlots)/s.totalSlots*100)}%)</td>
+                <td class="font-mono text-blue-600 font-bold">${s.currentTemp}°C</td>
+                <td class="text-emerald-700 font-bold">70% (2,100원/일)</td>
+                <td>
+                  <button onclick="showToast('${s.name} 비상 냉각 제어 신호 전송 완료', 'success')" class="px-2.5 py-1 bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-[11px] font-bold">
+                    냉동 제어
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    /* ================= Chart.js 실시간 텔레메트리 구현 ================= */
+    function initLiveChart() {
+      const ctx = document.getElementById('liveTempChart');
+      if (!ctx) return;
+      
+      if (liveChart) {
+        liveChart.destroy();
+      }
+
+      const initialLabels = ['12:00', '12:05', '12:10', '12:15', '12:20', '12:25', '12:30'];
+      const initialData = [-18.5, -18.7, -18.4, -18.9, -18.6, -18.8, -18.6];
+
+      liveChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: initialLabels,
+          datasets: [{
+            label: '슬롯 내부 온도 (℃)',
+            data: initialData,
+            borderColor: '#2563EB',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointBackgroundColor: '#2563EB'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `온도: ${ctx.parsed.y.toFixed(1)} ℃`
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: -25,
+              max: -5,
+              grid: { color: '#F1F5F9' },
+              ticks: {
+                callback: (val) => `${val}℃`,
+                font: { size: 10 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 10 } }
+            }
+          }
+        }
+      });
+
+      if (chartInterval) clearInterval(chartInterval);
+      chartInterval = setInterval(updateLiveTelemetry, 3000);
+    }
+
+    function updateLiveTelemetry() {
+      if (!liveChart) return;
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      
+      let temp;
+      if (appState.simulatedMelt) {
+        temp = -8.2 + (Math.random() * 1.5 - 0.7);
+      } else {
+        temp = -18.6 + (Math.random() * 0.8 - 0.4);
+      }
+
+      const roundedTemp = Math.round(temp * 10) / 10;
+      const labels = liveChart.data.labels;
+      const data = liveChart.data.datasets[0].data;
+
+      labels.push(timeStr);
+      data.push(roundedTemp);
+      if (labels.length > 8) {
+        labels.shift();
+        data.shift();
+      }
+
+      if (appState.simulatedMelt) {
+        liveChart.data.datasets[0].borderColor = '#E11D48';
+        liveChart.data.datasets[0].backgroundColor = 'rgba(225, 29, 72, 0.12)';
+        liveChart.data.datasets[0].pointBackgroundColor = '#E11D48';
+      } else {
+        liveChart.data.datasets[0].borderColor = '#2563EB';
+        liveChart.data.datasets[0].backgroundColor = 'rgba(37, 99, 235, 0.08)';
+        liveChart.data.datasets[0].pointBackgroundColor = '#2563EB';
+      }
+
+      liveChart.update();
+
+      $('monCurrentTemp').innerText = `${roundedTemp.toFixed(1)}°C`;
+      const minVal = Math.min(...data);
+      const maxVal = Math.max(...data);
+      $('monMinTemp').innerText = `${minVal.toFixed(1)}°C`;
+      $('monMaxTemp').innerText = `${maxVal.toFixed(1)}°C`;
+
+      if (roundedTemp > -12) {
+        $('monStatusText').innerText = '⚠️ 고온 주의 (해동 경고)';
+        $('monStatusText').className = 'text-sm font-black mt-1 block text-rose-600';
+      } else {
+        $('monStatusText').innerText = '안전 정상 (-18℃ 유지)';
+        $('monStatusText').className = 'text-sm font-black mt-1 block text-emerald-600';
+      }
+    }
+
+    /* ================= CNN / OCR 위생 검증 및 사진 업로드 ================= */
+    function applyPresetAiSample(type) {
+      if (type === 'dumpling') {
+        appState.bookingDraft.photos = [makeSamplePhotoSvg('🥟', '#DBEAFE')];
+        appState.bookingDraft.cnnScore = 96.4;
+        appState.bookingDraft.isSealed = true;
+        appState.bookingDraft.ocrDate = '2027.03.15';
+        appState.bookingDraft.passed = true;
+        $('bookItemName').value = '비비고 왕교자 1.4kg';
+        $('aiCnnResult').innerText = '완전 밀봉 정상 (96.4%)';
+        $('aiCnnResult').className = 'font-bold text-emerald-600';
+        $('aiOcrResult').innerText = 'EXP 2027.03.15 (안전)';
+        $('aiOcrResult').className = 'font-mono font-bold text-blue-600';
+        $('submitBookingBtn').disabled = false;
+        $('submitBookingBtn').className = 'w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition';
+        showToast('✅ 정상 밀봉 완제품으로 AI 위생 검증을 통과했습니다.', 'success');
+      } else if (type === 'damaged') {
+        appState.bookingDraft.photos = [makeSamplePhotoSvg('🍕', '#FEE2E2')];
+        appState.bookingDraft.cnnScore = 48.2;
+        appState.bookingDraft.isSealed = false;
+        appState.bookingDraft.ocrDate = '2026.11.20';
+        appState.bookingDraft.passed = false;
+        $('bookItemName').value = '냉동 오븐 피자 (포장 훼손)';
+        $('aiCnnResult').innerText = '포장 찢어짐/누출 감지 (48.2% 불합격)';
+        $('aiCnnResult').className = 'font-bold text-rose-600';
+        $('aiOcrResult').innerText = 'EXP 2026.11.20 (통과)';
+        $('aiOcrResult').className = 'font-mono font-bold text-slate-700';
+        showToast('⚠️ 포장 무결성 검증 실패: 밀봉이 훼손된 식품은 입고가 반려됩니다.', 'error');
+      } else if (type === 'expired') {
+        appState.bookingDraft.photos = [makeSamplePhotoSvg('🥩', '#F3E8FF')];
+        appState.bookingDraft.cnnScore = 91.0;
+        appState.bookingDraft.isSealed = true;
+        appState.bookingDraft.ocrDate = '2026.10.15 (경과)';
+        appState.bookingDraft.passed = false;
+        $('bookItemName').value = '양념 불고기 밀키트';
+        $('aiCnnResult').innerText = '밀봉 완제품 확인 (91.0%)';
+        $('aiCnnResult').className = 'font-bold text-emerald-600';
+        $('aiOcrResult').innerText = 'EXP 2026.10.15 (기한 경과 불합격)';
+        $('aiOcrResult').className = 'font-mono font-bold text-rose-600';
+        showToast('❌ 유통기한/소비기한 경과 감지: 이미 기한이 지난 물품은 입고가 불가합니다.', 'error');
+      }
+      renderPhotoPreviews();
+    }
+
+    function renderPhotoPreviews() {
+      const grid = $('bookingPhotoPreviewGrid');
+      if (!grid) return;
+      grid.innerHTML = appState.bookingDraft.photos.map((src, i) => `
+        <div class="relative w-full aspect-square rounded-xl overflow-hidden border border-slate-200">
+          <img src="${src}" class="w-full h-full object-cover">
+          <button type="button" onclick="removePhoto(${i})" class="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-900/70 text-white flex items-center justify-center text-[10px]">×</button>
+        </div>
+      `).join('');
+    }
+
+    function removePhoto(idx) {
+      appState.bookingDraft.photos.splice(idx, 1);
+      renderPhotoPreviews();
+    }
+
+    function handlePhotoUpload(e, type) {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        appState.bookingDraft.photos = [evt.target.result];
+        appState.bookingDraft.cnnScore = 94.8;
+        appState.bookingDraft.isSealed = true;
+        appState.bookingDraft.ocrDate = '2027.01.20';
+        appState.bookingDraft.passed = true;
+        $('aiCnnResult').innerText = '사용자 업로드 사진 밀봉 판독 완료 (94.8%)';
+        $('aiCnnResult').className = 'font-bold text-emerald-600';
+        $('aiOcrResult').innerText = 'EXP 2027.01.20 (유효)';
+        $('aiOcrResult').className = 'font-mono font-bold text-blue-600';
+        renderPhotoPreviews();
+        showToast('📷 사진이 정상 등록되어 CNN/OCR 검증을 완료했습니다.', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* ================= 스티커 시뮬레이터 ================= */
+    function simulateSticker(isMelt) {
+      appState.simulatedMelt = isMelt;
+      const el = $('stickerDemoStatus');
+      if (isMelt) {
+        el.innerText = '⚠️ 빨간색 (해동 감지)';
+        el.className = 'font-black text-rose-600 text-[11px]';
+        showToast('⚠️ 스티커가 빨간색으로 영구 변색되어 단기 특약 보험 심사로 연동됩니다.', 'error');
+      } else {
+        el.innerText = '❄️ 파란색 (정상 보관)';
+        el.className = 'font-black text-blue-600 text-[11px]';
+        showToast('❄️ 파란색 정상 보관 상태입니다 (-18℃ 유지).', 'success');
+      }
+      updateLiveTelemetry();
+    }
+
+    /* ================= 호스트 수익 계산기 (70% 정산) ================= */
+    function updateHostCalculator() {
+      const slots = +$('calcSlotRange').value;
+      $('calcSlotLabel').innerText = `${slots}개 슬롯 (약 ${Math.ceil(slots / 6)}칸)`;
+      const totalSettlement = Math.round(slots * 30 * 0.65 * 2100);
+      $('calcProfitResult').innerText = `${totalSettlement.toLocaleString()}원`;
+      const netProfit = totalSettlement - 180000;
+      $('calcNetProfitResult').innerText = netProfit >= 0 ? `+${netProfit.toLocaleString()}원 흑자` : `${netProfit.toLocaleString()}원`;
+    }
+
+    /* ================= 모달 및 인증 처리 ================= */
+    function handleManualLogin(e) {
+      e.preventDefault();
+      const id = $('manualAuthId').value.trim();
+      const pw = $('manualAuthPw').value.trim();
+      const isAdmin = $('authIsAdminCheck').checked;
+
+      if (isAdmin) {
+        if (id === MASTER_ADMIN.id && pw === MASTER_ADMIN.pw) {
+          appState.user = { name: 'Super Admin', role: 'admin' };
+          closeModal('modalAuth');
+          switchRole('admin');
+          showToast('🛡️ 최고관리자 인증에 성공하였습니다.', 'success');
+          renderAll();
+          return;
+        } else {
+          showToast('관리자 인증 정보가 올바르지 않습니다 (TESTMASTER / TESTM2022).', 'error');
+          return;
+        }
+      }
+
+      appState.user = { name: id || '게스트', role: 'guest', mileage: 1000 };
+      closeModal('modalAuth');
+      switchRole('guest');
+      showToast('👋 성공적으로 로그인되었습니다 (신규 혜택 1,000M 지급).', 'success');
+      renderAll();
+    }
+
+    function switchRole(role) {
+      appState.role = role;
+      $('roleBtnGuest').className = role === 'guest' ? 'px-3 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition' : 'px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition';
+      $('roleBtnHost').className = role === 'host' ? 'px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition' : 'px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition';
+      $('roleBtnAdmin').className = role === 'admin' ? 'px-3 py-1.5 rounded-lg bg-white text-rose-600 shadow-sm transition' : 'px-3 py-1.5 rounded-lg text-rose-600 hover:text-rose-800 transition';
+
+      $('viewGuest').classList.toggle('hidden', role !== 'guest');
+      $('viewHost').classList.toggle('hidden', role !== 'host');
+      $('viewAdmin').classList.toggle('hidden', role !== 'admin');
+      
+      if (role === 'guest') {
+        $('headerCtaBtn').innerText = '보관 슬롯 예약하기';
+      } else if (role === 'host') {
+        $('headerCtaBtn').innerText = '+ 새 매장 등록';
+      } else {
+        $('headerCtaBtn').innerText = '관리자 통제 센터';
+      }
+    }
+
+    function openBookingModal(sid) {
+      const select = $('bookStoreSelect');
+      select.innerHTML = STORES.map(s => `<option value="${s.id}">${s.name} (${s.region})</option>`).join('');
+      if (sid) select.value = sid;
+      openModal('modalBooking');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setVolume(v, p) {
+      appState.bookingDraft.volumeL = v;
+      ['S', 'M', 'L'].forEach(code => {
+        const btn = $(`volBtn${code}`);
+        if (code === p) {
+          btn.className = 'vol-btn p-2 rounded-xl border text-center font-bold border-blue-500 bg-blue-50 text-blue-700';
+        } else {
+          btn.className = 'vol-btn p-2 rounded-xl border text-center font-bold border-slate-200 text-slate-700';
+        }
+      });
+    }
+
+    function handleBookingSubmit(e) {
+      e.preventDefault();
+      if (!appState.bookingDraft.passed) {
+        showToast('⚠️ CNN/OCR 위생 검증을 통과한 식품만 예약이 가능합니다.', 'error');
+        return;
+      }
+      const storeId = $('bookStoreSelect').value;
+      const store = STORES.find(s => s.id === storeId);
+      const newB = {
+        id: `BK-${Math.floor(1000 + Math.random() * 9000)}`,
+        storeId: storeId,
+        slotId: `SLOT 0${Math.floor(Math.random() * 6) + 1}`,
+        itemName: $('bookItemName').value,
+        volumeL: appState.bookingDraft.volumeL,
+        photos: appState.bookingDraft.photos.length ? [...appState.bookingDraft.photos] : [makeSamplePhotoSvg('📦', '#F1F5F9')],
+        status: 'active',
+        sticker: 'blue',
+        cnnPass: true,
+        ocrDate: appState.bookingDraft.ocrDate
+      };
+      appState.bookings.unshift(newB);
+      if (store && store.availableSlots > 0) store.availableSlots -= 1;
+      closeModal('modalBooking');
+      showToast(`🎉 ${store.name} 슬롯 예약 완료! 출입 바코드가 발급되었습니다.`, 'success');
+      renderAll();
+    }
+
+    function handleHostApplySubmit(e) {
+      e.preventDefault();
+      const name = $('hostApplyName').value;
+      const addr = $('hostApplyAddress').value;
+      const slots = +$('hostApplySlots').value;
+      const newStore = {
+        id: `store-custom-${Date.now()}`,
+        name: name,
+        region: name.includes('망원') ? '망원' : '신규',
+        mapX: 45,
+        mapY: 50,
+        address: addr,
+        totalSlots: slots,
+        availableSlots: slots,
+        capacityL: slots * 40,
+        usedL: 0,
+        currentTemp: -18.8
+      };
+      STORES.push(newStore);
+      closeModal('modalHostApply');
+      showToast(`🎉 [${name}] 호스트 입점 신청이 완료되었습니다. 70% 정산 파트너로 승인되었습니다!`, 'success');
+      renderAll();
+    }
+
+    function handleInquirySubmit(e) {
+      e.preventDefault();
+      $('inqTitle').value = '';
+      $('inqContent').value = '';
+      showToast('📩 1:1 고객 문의가 접수되었습니다. 담당자가 신속히 답변드립니다.', 'success');
+    }
+
+    function searchStoresFromInput() {
+      const q = $('guestQuickSearch').value.trim().toLowerCase();
+      if (!q) {
+        renderStoreCards(STORES);
+        showToast('전체 거점 매장이 표시됩니다.', 'info');
+        return;
+      }
+      const filtered = STORES.filter(s => s.name.toLowerCase().includes(q) || s.region.toLowerCase().includes(q) || s.address.toLowerCase().includes(q));
+      renderStoreCards(filtered);
+      showToast(`'${q}' 검색 결과 ${filtered.length}건이 조회되었습니다.`, 'info');
+    }
+
+    function focusMapRegion(region) {
+      document.querySelectorAll('.region-btn').forEach(btn => {
+        if (btn.dataset.region === region) {
+          btn.className = 'px-2.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs region-btn';
+        } else {
+          btn.className = 'px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs region-btn';
+        }
+      });
+      if (region === 'all') {
+        renderStoreCards(STORES);
+        closeMapCard();
+        showToast('전체 거점 지도가 활성화되었습니다.', 'info');
+      } else {
+        const filtered = STORES.filter(s => s.region === region);
+        renderStoreCards(filtered);
+        if (filtered.length > 0) selectMapStore(filtered[0].id);
+        showToast(`${region} 거점 매장이 선택되었습니다.`, 'info');
+      }
+    }
+
+    function openModal(id) { $(id).classList.remove('hidden'); }
+    function closeModal(id) { $(id).classList.add('hidden'); }
+    function openTermsModal() { openModal('modalTerms'); }
+    function openInsuranceModal() { openModal('modalInsurance'); }
+    function openHostApplyModal() { openModal('modalHostApply'); }
+    function openMyPageModal() {
+      if (!appState.user) {
+        openModal('modalAuth');
+      } else {
+        openModal('modalMyPage');
+      }
+    }
+    function openMileageModal() { openMyPageModal(); }
+    function handleRoleCta() {
+      if (appState.role === 'host') {
+        openHostApplyModal();
+      } else {
+        openBookingModal();
+      }
+    }
+    function logoutAdmin() {
+      appState.user = { name: '게스트', role: 'guest', mileage: 1000 };
+      switchRole('guest');
+      renderAll();
+      showToast('최고관리자 모드가 해제되었습니다.', 'info');
+    }
+    function handleAuthAction() {
+      if (appState.user) {
+        appState.user = null;
+        renderAll();
+        showToast('로그아웃 되었습니다.', 'info');
+      } else {
+        openModal('modalAuth');
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = $('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `p-3 rounded-2xl border text-xs font-semibold shadow-xl text-white transition-all transform duration-200 translate-y-0 ${type==='error'?'bg-rose-900 border-rose-700':type==='success'?'bg-emerald-900 border-emerald-700':'bg-slate-900 border-slate-700'}`;
+      toast.innerText = msg;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+  </script>
 </body>
 </html>
