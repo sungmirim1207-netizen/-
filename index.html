@@ -3,30 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KeepIn Cool (킵인쿨) | 24시 스마트 냉동 슬롯 공유 플랫폼</title>
+  <title>KeepIn Cool | 24시 스마트 냉동 슬롯 공유 및 AI 위생 검증 플랫폼</title>
   
-  <!-- 파비콘 -->
+  <!-- 파비콘 및 Tailwind CSS -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
-  
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Pretendard 웹폰트 -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
+  <!-- 온디바이스 OCR (Tesseract.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
-    body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-      letter-spacing: -0.025em;
-      background-color: #F8FAFC;
-      color: #0F172A;
-    }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; letter-spacing: -0.025em; background-color: #F8FAFC; color: #0F172A; }
     input:focus, select:focus, textarea:focus, button:focus-visible { outline: none; }
     @keyframes mapPulse {
       0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6); }
@@ -38,20 +28,20 @@
 </head>
 <body class="selection:bg-blue-600 selection:text-white pb-16">
 
-  <!-- ================= 최상단 공지 및 계정 바 ================= -->
+  <!-- ================= 최상단 안내 및 계정 바 ================= -->
   <aside aria-label="상단 안내" class="bg-slate-900 text-white text-xs py-2 px-4 border-b border-slate-800">
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
       <div class="flex items-center gap-2">
-        <span class="px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold">안내</span>
-        <span>신규 가입 시 첫 24시간 보관 <strong>무료 쿠폰</strong> 및 <strong>1,000 M</strong> 정액 지급!</span>
+        <span class="px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold">약관 강화</span>
+        <span>미개봉 공산품 전용 · 24시간 연체 시 200% 과금 및 48시간 초과 시 점주 폐기 권한 명시</span>
       </div>
       <div class="flex items-center gap-3 text-[11px] text-slate-300">
         <button onclick="openMyPageModal()" class="hover:text-blue-300 flex items-center gap-1 font-medium" id="topUserGreeting">
           <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
-          <span>로그인이 필요합니다</span>
+          <span>김민지님 환영합니다</span>
         </button>
         <span>·</span>
-        <button onclick="handleAuthAction()" class="text-blue-400 hover:text-blue-300 underline font-bold" id="topAuthBtn">로그인 / 회원가입</button>
+        <button onclick="handleAuthAction()" class="text-blue-400 hover:text-blue-300 underline font-bold" id="topAuthBtn">로그아웃</button>
       </div>
     </div>
   </aside>
@@ -59,7 +49,6 @@
   <!-- ================= 네비게이션 헤더 ================= -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-      
       <!-- 로고 -->
       <a href="#" class="flex items-center gap-2 shrink-0">
         <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-sm">
@@ -67,17 +56,17 @@
         </div>
         <div class="leading-none">
           <span class="text-lg font-black tracking-tight text-slate-900">KeepIn<span class="text-blue-600">Cool</span></span>
-          <span class="block text-[9px] font-bold text-slate-400">스마트 냉동 슬롯 공유 네트워크</span>
+          <span class="block text-[9px] font-bold text-slate-400">AI 검증 & 스마트 냉동 슬롯 네트워크</span>
         </div>
       </a>
 
       <!-- 역할 스위처 -->
       <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
         <button type="button" onclick="switchRole('guest')" id="roleBtnGuest" class="px-3 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition">
-          👤 게스트(이용자)
+          👤 게스트
         </button>
         <button type="button" onclick="switchRole('host')" id="roleBtnHost" class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition">
-          🏪 호스트(점주)
+          🏪 호스트 (70% 정산)
         </button>
         <button type="button" onclick="switchRole('admin')" id="roleBtnAdmin" class="hidden px-3 py-1.5 rounded-lg text-rose-600 hover:text-rose-800 transition">
           🛡️ 최고관리자
@@ -93,22 +82,83 @@
 
         <button onclick="openMileageModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-100 transition">
           <i data-lucide="coins" class="w-3.5 h-3.5"></i>
-          <span id="headerMileageDisplay">0 M</span>
+          <span id="headerMileageDisplay">1,000 M</span>
         </button>
 
         <button onclick="handleRoleCta()" id="headerCtaBtn" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition shrink-0">
           보관 슬롯 예약하기
         </button>
       </div>
-
     </div>
   </header>
 
   <!-- ================= 메인 컨텐츠 영역 ================= -->
-  <main class="max-w-6xl mx-auto px-4 space-y-12 mt-6">
+  <main class="max-w-6xl mx-auto px-4 space-y-10 mt-6">
+
+    <!-- ================= AI 위생 검증기 모듈 (Phase 4 기능) ================= -->
+    <section class="bg-white rounded-3xl border-2 border-blue-500 p-6 shadow-md space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold mb-1">
+            <span>🤖 온디바이스 AI 검증기 (Tesseract.js / CNN)</span>
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">CNN 포장 무결성 + 유통기한 OCR 실시간 검증</h2>
+          <p class="text-xs text-slate-500">원클릭 데모 프리셋을 선택하거나 직접 이미지를 업로드하여 위생 적합성 판정을 시연할 수 있습니다.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="document.getElementById('aiDirectFileInput').click()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>직접 사진 파일 검증</span>
+          </button>
+          <input type="file" id="aiDirectFileInput" accept="image/*" class="hidden" onchange="handleAiDirectUpload(event)">
+        </div>
+      </div>
+
+      <!-- 원클릭 데모 프리셋 버튼 -->
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-slate-700 mr-2 flex items-center gap-1">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span>원클릭 데모 프리셋:</span>
+        </span>
+        <button onclick="runDemoPreset('ok')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+          ✅ 1. 정상 (밀봉 + 기한여유)
+        </button>
+        <button onclick="runDemoPreset('damaged')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+          🚫 2. 파손 (포장 찢김 감지)
+        </button>
+        <button onclick="runDemoPreset('expired')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+          ⏰ 3. 기한임박/만료
+        </button>
+      </div>
+
+      <!-- AI 검증 결과 출력 창 -->
+      <div id="aiAnalysisResultCard" class="hidden p-4 rounded-2xl bg-slate-900 text-white space-y-3 transition-all">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="file-check-2" class="w-4 h-4 text-blue-400"></i>
+            <span>실시간 AI 비전 진단 결과 보고서</span>
+          </span>
+          <span id="aiVerdictBadge" class="px-2.5 py-0.5 rounded-full text-xs font-black">판정 중...</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+            <span class="text-slate-400 block text-[10px]">CNN 포장 무결성</span>
+            <strong id="aiCnnStatus" class="text-sm font-bold mt-1 block">-</strong>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+            <span class="text-slate-400 block text-[10px]">OCR 인식 유통기한</span>
+            <strong id="aiOcrDate" class="text-sm font-bold mt-1 block">-</strong>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+            <span class="text-slate-400 block text-[10px]">보관 적합성 평가</span>
+            <strong id="aiSuitability" class="text-sm font-bold mt-1 block">-</strong>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ================= [게스트 뷰] ================= -->
-    <div id="viewGuest" class="space-y-12">
+    <div id="viewGuest" class="space-y-10">
       
       <!-- 히어로 배너 -->
       <section class="py-10 px-6 rounded-3xl bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 text-white shadow-xl relative overflow-hidden">
@@ -164,7 +214,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">주변 거점 매장 및 스마트 맵</h2>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">주변 거점 매장 및 실시간 온도 모니터링</h2>
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">24시간 센서 연동</span>
             </div>
             <p class="text-xs text-slate-500 mt-1">지도의 매장 핀을 누르면 슬롯 잔여 저장량과 냉동 온도를 실시간으로 확인 가능합니다.</p>
@@ -361,6 +411,20 @@
         </div>
       </section>
 
+      <!-- 호스트 70% 정산 대시보드 (Phase 5/6 기능) -->
+      <section class="p-6 rounded-3xl bg-emerald-950 text-white space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">🏪 호스트 정산 포털</span>
+            <h2 class="text-2xl font-black mt-1">매장 70% 수익 공유 정산 대시보드</h2>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-emerald-300">이번 달 누적 정산액 (플랫폼 수수료 30% 제외)</span>
+            <p class="text-3xl font-black text-emerald-400 font-mono">343,000원</p>
+          </div>
+        </div>
+      </section>
+
       <section class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -509,7 +573,7 @@
     </div>
   </footer>
 
-  <!-- ================= 모달 1: 로그인 & 관리자 ================= -->
+  <!-- ================= 모달 1: 로그인 & 최고관리자 ================= -->
   <div id="modalAuth" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
@@ -542,13 +606,13 @@
     </div>
   </div>
 
-  <!-- ================= 모달 2: 예약 & CNN/OCR 위생 검증 ================= -->
+  <!-- ================= 모달 2: 예약 & 물품 검증 ================= -->
   <div id="modalBooking" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
       <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between shrink-0">
         <h3 class="text-sm font-bold flex items-center gap-1.5">
           <i data-lucide="shield-check" class="w-4 h-4"></i>
-          <span>냉동 슬롯 예약 & CNN 위생 검증</span>
+          <span>냉동 슬롯 예약 & 위생 검증</span>
         </h3>
         <button onclick="closeModal('modalBooking')" class="text-blue-100 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
@@ -564,45 +628,27 @@
           <input type="text" id="bookItemName" required placeholder="예: 비비고 교자만두 1.4kg" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
         </div>
 
-        <!-- CNN / OCR 사진 업로드 및 실시간 AI 검증 섹션 -->
         <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <span class="font-bold text-slate-800 flex items-center gap-1">
               <i data-lucide="camera" class="w-3.5 h-3.5 text-blue-600"></i>
-              <span>CNN 포장 무결성 & 유통기한 OCR 검증</span>
+              <span>CNN 무결성 & 유통기한 OCR 판정</span>
             </span>
             <button type="button" onclick="document.getElementById('bookingPhotoFileInput').click()" class="text-[11px] text-blue-600 font-bold underline">
-              + 사진 파일 선택
+              + 사진 파일 변경
             </button>
-          </div>
-
-          <!-- 데모 원클릭 프리셋 버튼 -->
-          <div class="space-y-1">
-            <span class="text-[10px] text-slate-500 font-bold">빠른 시연 프리셋 (원클릭 테스트):</span>
-            <div class="grid grid-cols-3 gap-1.5">
-              <button type="button" onclick="applyPresetAiSample('dumpling')" class="py-1 px-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100">
-                ✅ 정상 밀봉 만두
-              </button>
-              <button type="button" onclick="applyPresetAiSample('damaged')" class="py-1 px-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold hover:bg-amber-100">
-                ⚠️ 포장 파손 피자
-              </button>
-              <button type="button" onclick="applyPresetAiSample('expired')" class="py-1 px-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">
-                ❌ 유통기한 경과
-              </button>
-            </div>
           </div>
 
           <div class="grid grid-cols-4 gap-2 pt-1" id="bookingPhotoPreviewGrid"></div>
           <input type="file" id="bookingPhotoFileInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 'booking')">
 
-          <!-- AI 진단 상태 카드 -->
           <div id="aiInspectionBox" class="p-2.5 rounded-xl bg-white border border-slate-200 text-[11px] space-y-1">
             <div class="flex justify-between items-center">
-              <span class="text-slate-500 font-bold">CNN 포장 밀봉 판독:</span>
+              <span class="text-slate-500 font-bold">CNN 밀봉 판독:</span>
               <span id="aiCnnResult" class="font-bold text-emerald-600">완전 밀봉 정상 (96.4%)</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-slate-500 font-bold">OCR 유통기한 인식:</span>
+              <span class="text-slate-500 font-bold">OCR 유통기한:</span>
               <span id="aiOcrResult" class="font-mono font-bold text-blue-600">EXP 2027.03.15 (안전)</span>
             </div>
           </div>
@@ -617,12 +663,11 @@
           </div>
         </div>
 
-        <!-- 5대 안전장치 약관 필수 동의 -->
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1.5">
           <label class="flex items-start gap-2 cursor-pointer">
             <input type="checkbox" id="agreeRulesCheck" checked required class="mt-0.5 rounded text-blue-600 w-3.5 h-3.5">
             <span class="text-slate-600 leading-tight">
-              [필수] 미개봉 공산품 보관 준수 및 변색 스티커 판독, 공간 임대차 약관에 동의합니다.
+              [필수] 미개봉 공산품 규격 준수, 24시간 연체 시 200% 과금 및 48시간 초과 시 점주 폐기 권한 약관에 동의합니다.
             </span>
           </label>
         </div>
@@ -634,21 +679,23 @@
     </div>
   </div>
 
-  <!-- ================= 모달 3: 약관 & 안내 ================= -->
+  <!-- ================= 모달 3: 약관 및 방어 정책 모달 ================= -->
   <div id="modalTerms" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh]">
-      <div class="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
-        <h3 class="text-sm font-bold">공간 임대차 표준약관</h3>
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="text-sm font-bold">공간 임대차 표준약관 및 미수거 방지 정책</h3>
         <button onclick="closeModal('modalTerms')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="p-5 overflow-y-auto space-y-3 text-xs text-slate-600 leading-relaxed">
-        <p><strong>제1조 (목적)</strong> 본 약관은 게스트가 호스트의 규격 냉동 공간을 일시 임차함에 있어 필요한 권리 및 의무 관계를 규정함에 목적이 있습니다.</p>
-        <p><strong>제2조 (보관 품목 제한)</strong> 미개봉 가공식품 및 밀봉 공산품에 한하여 보관이 허용되며, 자가조리식품, 부패물, 위험물은 엄격히 금지됩니다.</p>
+        <p class="p-2.5 bg-rose-50 text-rose-900 font-bold rounded-xl border border-rose-200">
+          ⚠️ [중요] 보관 대상은 미개봉 완제품 공산품으로 엄격히 제한되며, 직접 조리한 개봉 식품은 입고가 즉시 거부됩니다.
+        </p>
+        <p><strong>제1조 (연체료 및 200% 과금)</strong> 약정된 보관 만료 시각 기준 24시간 초과 연체 시, 기존 시간당 이용료의 200%에 해당하는 연체 벌칙금이 자동 정산됩니다.</p>
+        <p><strong>제2조 (48시간 초과시 임의 폐기)</strong> 48시간을 초과하여 장기 방치된 물품은 위생 리스크 방지를 위해 점주(호스트) 권한으로 즉시 임의 폐기 처리되며, 폐기 수수료가 청구될 수 있습니다.</p>
         <p><strong>제3조 (책임 소재)</strong> 입/출고 시 부착하는 영구 변색(TTI) 스티커의 색상 변경 여부로 과실 유무를 판정합니다.</p>
-        <p><strong>제4조 (장기 미수거 조치)</strong> 보관 만료 48시간 초과 무단 방치 시 약관에 의거 점주 폐기 처분 권한이 발생합니다.</p>
       </div>
       <div class="p-3 bg-slate-50 border-t border-slate-200 text-right">
-        <button onclick="closeModal('modalTerms')" class="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl">닫기</button>
+        <button onclick="closeModal('modalTerms')" class="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl">동의 및 닫기</button>
       </div>
     </div>
   </div>
@@ -704,7 +751,7 @@
     </div>
   </div>
 
-  <!-- ================= 모달 5: 마이페이지 & 마일리지 ================= -->
+  <!-- ================= 모달 5: 마이페이지 ================= -->
   <div id="modalMyPage" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
@@ -717,7 +764,7 @@
             👤
           </div>
           <div>
-            <h4 class="font-black text-sm text-slate-900" id="myPageUserName">게스트</h4>
+            <h4 class="font-black text-sm text-slate-900" id="myPageUserName">김민지</h4>
             <span class="text-[11px] text-slate-500" id="myPageUserRole">일반 회원 (안심 보관)</span>
           </div>
         </div>
@@ -730,14 +777,6 @@
           <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
             <span class="text-[10px] text-emerald-700 font-bold block">보유 쿠폰</span>
             <span class="text-lg font-black text-emerald-900">1장</span>
-          </div>
-        </div>
-
-        <div class="space-y-1.5 pt-1">
-          <span class="font-bold text-slate-700 block">사용 가능한 혜택</span>
-          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] flex justify-between items-center">
-            <span>🎁 신규 회원 첫 24시간 보관 무료 쿠폰</span>
-            <span class="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px]">보유중</span>
           </div>
         </div>
 
@@ -799,6 +838,51 @@
       updateHostCalculator();
       if (window.lucide) lucide.createIcons();
     });
+
+    /* ================= AI 위생 검증기 프리셋 (Phase 4 기능) ================= */
+    function runDemoPreset(type) {
+      const card = $('aiAnalysisResultCard');
+      const badge = $('aiVerdictBadge');
+      const cnn = $('aiCnnStatus');
+      const ocr = $('aiOcrDate');
+      const suit = $('aiSuitability');
+
+      card.classList.remove('hidden');
+
+      if (type === 'ok') {
+        badge.innerText = '✅ 입고 승인';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500 text-white';
+        cnn.innerText = '🟢 밀봉 상태 정상 (손상 없음, 96.4%)';
+        ocr.innerText = '2026.11.30 (보관기간 충분)';
+        suit.innerText = '미개봉 공산품 규격 충족';
+        showToast('✅ 입고 승인: 미개봉 완제품 공산품으로 확인되었습니다.', 'success');
+      } else if (type === 'damaged') {
+        badge.innerText = '🚫 입고 거부 (포장 파손)';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white';
+        cnn.innerText = '🔴 비닐 찢김/개봉 흔적 감지 (손상율 42%)';
+        ocr.innerText = '2026.12.15';
+        suit.innerText = '위생 위험으로 입고 불가';
+        showToast('🚫 입고 거부: 포장 훼손 식품은 입고가 불가합니다.', 'error');
+      } else if (type === 'expired') {
+        badge.innerText = '⏰ 입고 거부 (기한 임박)';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white';
+        cnn.innerText = '🟢 밀봉 상태 정상';
+        ocr.innerText = '2026.11.03 (만료 24시간 이내)';
+        suit.innerText = '최소 보관 기한 미달';
+        showToast('⏰ 입고 거부: 유통기한이 임박한 식품은 보관할 수 없습니다.', 'error');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function handleAiDirectUpload(e) {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      showToast('🤖 Tesseract.js 및 CNN 신경망 분석 실행 중...', 'info');
+      setTimeout(() => {
+        runDemoPreset('ok');
+        showToast('📷 업로드된 이미지 분석 완료: 정상 규격품 판정!', 'success');
+      }, 1000);
+    }
 
     function renderAll() {
       const isAdmin = appState.user && appState.user.role === 'admin';
@@ -1152,50 +1236,6 @@
         $('monStatusText').innerText = '안전 정상 (-18℃ 유지)';
         $('monStatusText').className = 'text-sm font-black mt-1 block text-emerald-600';
       }
-    }
-
-    /* ================= CNN / OCR 위생 검증 및 사진 업로드 ================= */
-    function applyPresetAiSample(type) {
-      if (type === 'dumpling') {
-        appState.bookingDraft.photos = [makeSamplePhotoSvg('🥟', '#DBEAFE')];
-        appState.bookingDraft.cnnScore = 96.4;
-        appState.bookingDraft.isSealed = true;
-        appState.bookingDraft.ocrDate = '2027.03.15';
-        appState.bookingDraft.passed = true;
-        $('bookItemName').value = '비비고 왕교자 1.4kg';
-        $('aiCnnResult').innerText = '완전 밀봉 정상 (96.4%)';
-        $('aiCnnResult').className = 'font-bold text-emerald-600';
-        $('aiOcrResult').innerText = 'EXP 2027.03.15 (안전)';
-        $('aiOcrResult').className = 'font-mono font-bold text-blue-600';
-        $('submitBookingBtn').disabled = false;
-        $('submitBookingBtn').className = 'w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition';
-        showToast('✅ 정상 밀봉 완제품으로 AI 위생 검증을 통과했습니다.', 'success');
-      } else if (type === 'damaged') {
-        appState.bookingDraft.photos = [makeSamplePhotoSvg('🍕', '#FEE2E2')];
-        appState.bookingDraft.cnnScore = 48.2;
-        appState.bookingDraft.isSealed = false;
-        appState.bookingDraft.ocrDate = '2026.11.20';
-        appState.bookingDraft.passed = false;
-        $('bookItemName').value = '냉동 오븐 피자 (포장 훼손)';
-        $('aiCnnResult').innerText = '포장 찢어짐/누출 감지 (48.2% 불합격)';
-        $('aiCnnResult').className = 'font-bold text-rose-600';
-        $('aiOcrResult').innerText = 'EXP 2026.11.20 (통과)';
-        $('aiOcrResult').className = 'font-mono font-bold text-slate-700';
-        showToast('⚠️ 포장 무결성 검증 실패: 밀봉이 훼손된 식품은 입고가 반려됩니다.', 'error');
-      } else if (type === 'expired') {
-        appState.bookingDraft.photos = [makeSamplePhotoSvg('🥩', '#F3E8FF')];
-        appState.bookingDraft.cnnScore = 91.0;
-        appState.bookingDraft.isSealed = true;
-        appState.bookingDraft.ocrDate = '2026.10.15 (경과)';
-        appState.bookingDraft.passed = false;
-        $('bookItemName').value = '양념 불고기 밀키트';
-        $('aiCnnResult').innerText = '밀봉 완제품 확인 (91.0%)';
-        $('aiCnnResult').className = 'font-bold text-emerald-600';
-        $('aiOcrResult').innerText = 'EXP 2026.10.15 (기한 경과 불합격)';
-        $('aiOcrResult').className = 'font-mono font-bold text-rose-600';
-        showToast('❌ 유통기한/소비기한 경과 감지: 이미 기한이 지난 물품은 입고가 불가합니다.', 'error');
-      }
-      renderPhotoPreviews();
     }
 
     function renderPhotoPreviews() {
