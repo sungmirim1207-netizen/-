@@ -24,6 +24,48 @@
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
     }
     .map-pin-pulse { animation: mapPulse 2.2s infinite; }
+
+    /* 메인 히어로 타이틀: 반응형 폰트 자동 축소 및 모바일 한 줄 유지 (Fluid Typography & keep-all) */
+    .hero-main-title {
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      word-break: keep-all;
+    }
+
+    /* 데스크톱/PC 환경 (기존 sm:text-5xl / 3rem 크기 및 디자인 100% 유지) */
+    @media (min-width: 768px) {
+      .hero-main-title {
+        font-size: 3rem; /* 48px */
+        line-height: 1.2;
+      }
+    }
+
+    /* 태블릿 / 중간 화면 (641px ~ 767px) */
+    @media (min-width: 641px) and (max-width: 767px) {
+      .hero-main-title {
+        font-size: clamp(1.6rem, 4vw, 2.3rem);
+        line-height: 1.25;
+      }
+    }
+
+    /* 모바일 및 작은 브라우저 화면 (640px 이하): 한 줄로 자연스럽게 읽히도록 유체 폰트(Fluid Typography) 적용 */
+    @media (max-width: 640px) {
+      .hero-main-title {
+        font-size: clamp(0.72rem, 3.45vw, 1.25rem);
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+        line-height: 1.3;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .hero-main-title {
+        font-size: clamp(0.68rem, 3.2vw, 0.92rem);
+        letter-spacing: -0.05em;
+        white-space: nowrap;
+      }
+    }
   </style>
 </head>
 <body class="selection:bg-blue-600 selection:text-white pb-16">
@@ -161,14 +203,14 @@
     <div id="viewGuest" class="space-y-10">
       
       <!-- 히어로 배너 -->
-      <section class="py-10 px-6 rounded-3xl bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 text-white shadow-xl relative overflow-hidden">
-        <div class="relative z-10 max-w-2xl space-y-4">
+      <section class="py-8 sm:py-10 px-4 sm:px-6 rounded-3xl bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl lg:max-w-3xl space-y-4">
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
             <span>🧊 규격 포장 완제품 · 보냉백 · 신선식품 안심 보관</span>
           </div>
-          <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            원룸 냉장고 용량이 부족할 땐?<br />
-            <span class="text-blue-400">집 앞 24시 무인 매장에 쏙!</span>
+          <h1 class="hero-main-title text-slate-100 tracking-tight leading-tight">
+            <span>원룸 냉장고 용량이 부족할 땐?</span>
+            <span class="text-blue-400 ml-1 sm:ml-0 sm:block">집 앞 24시 무인 매장에 쏙!</span>
           </h1>
           <p class="text-sm text-slate-300 leading-relaxed font-normal">
             동네 무인 매장의 남는 냉동 슬롯을 대여하고 CNN/OCR 포장 위생 검증 및 영하 18℃ IoT 콜드체인 모니터링으로 신선하게 보관하세요.
@@ -202,7 +244,7 @@
             <p class="text-[11px] text-slate-500 mt-1">온도 감지 변색(TTI) 스티커 부착 후 바코드 입고</p>
           </div>
           <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center mx-auto mb-2 text-xs">3</div>
+            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center mx-auto mb-2 text-xs">3</div>
             <h3 class="font-bold text-xs text-slate-900">픽업 & 투명 후불 정산</h3>
             <p class="text-[11px] text-slate-500 mt-1">출고 스티커 확인 후 점주 70% 정산 및 안심 수령</p>
           </div>
